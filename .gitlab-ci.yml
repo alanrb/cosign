@@ -1,0 +1,73 @@
+# .gitlab-ci.yml
+stages:
+  - build
+  - sign
+  - verify
+  - deploy
+
+variables:
+  IMAGE_NAME: "my-golang-app"
+  ACR_NAME: "myacr.azurecr.io"
+  IMAGE_TAG: "latest"
+
+# Build the Docker image using Kaniko
+build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:latest
+    entrypoint: [""]
+  script:
+    - echo "Building Docker image with Kaniko"
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${ACR_NAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+      --destination "${ACR_NAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
+
+# Sign the Docker image using Cosign
+sign:
+  stage: sign
+  image:
+    name: cgr.dev/chainguard/cosign:latest
+    entrypoint: [""]
+  script:
+    - echo "Signing Docker image with Cosign"
+    - cosign sign --key $COSIGN_PRIVATE_KEY ${ACR_NAME}/${IMAGE_NAME}:${IMAGE_TAG}
+    - cosign sign --key $COSIGN_PRIVATE_KEY ${ACR_NAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+
+# Verify the signed Docker image using Cosign
+verify:
+  stage: verify
+  image:
+    name: cgr.dev/chainguard/cosign:latest
+    entrypoint: [""]
+  script:
+    - echo "Verifying Docker image with Cosign"
+    - cosign verify --key $COSIGN_PUBLIC_KEY ${ACR_NAME}/${IMAGE_NAME}:${IMAGE_TAG}
+    - cosign verify --key $COSIGN_PUBLIC_KEY ${ACR_NAME}/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+
+# Deploy to staging environment
+deploy_to_staging:
+  stage: deploy
+  script:
+    - echo "Deploying to staging"
+    - echo "Using API key: $STAGING_API_KEY"
+    - echo "Pulling and running the signed image: ${ACR_NAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+  environment:
+    name: staging
+    url: https://staging.example.com
+  only:
+    - main  # Trigger this job only on the main branch
+
+# Deploy to production environment
+deploy_to_production:
+  stage: deploy
+  script:
+    - echo "Deploying to production"
+    - echo "Using API key: $PRODUCTION_API_KEY"
+    - echo "Pulling and running the signed image: ${ACR_NAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+  environment:
+    name: production
+    url: https://production.example.com
+  only:
+    - tags  # Trigger this job only when a tag is created

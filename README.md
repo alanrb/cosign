@@ -1,3 +1,5 @@
+[https://alanrb.medium.com/building-signing-and-verifying-docker-images-for-golang-apps-with-gitlab-ci-cd-kaniko-and-3f923e31f15d](https://alanrb.medium.com/building-signing-and-verifying-docker-images-for-golang-apps-with-gitlab-ci-cd-kaniko-and-3f923e31f15d "https://alanrb.medium.com/building-signing-and-verifying-docker-images-for-golang-apps-with-gitlab-ci-cd-kaniko-and-3f923e31f15d")
+
 ### **Explanation of the `.gitlab-ci.yml` File**
 
 1. **Stages**:
